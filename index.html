@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,21 +8,33 @@
     <title>Jaime's Weather</title>
 
 </head>
+
 <body>
-    <div id = "weatherContainer" class = "container">
+    <div id="weatherContainer" class="container">
 
         <div id="weather" class="row">
             <div id="title" class="col-12 title text-center font-weight-bold">
-              <h1>Weather Dashboard</h1>
+                <h1>Weather Dashboard</h1>
             </div>
-          </div>
+        </div>
 
+        <div class="row">
+            <div id="zipCodeContainer" class="col-4 zipCode text-left font-weight-bold">
+                <p>Search for a City:</p>
+                <div class="input-group">
+                    <input id="zipCode" type="search" class="form-control rounded " placeholder="Search"
+                        aria-label="Search" aria-describedby="search-addon" />
+                    <button id="searchBtn" type="button" class="SearchBtn btn-outline-primary">search</button>
+                </div>
+                <div id="locationHistory" class="list-group">
+                </div>
+            </div>
 
-
-    </div>
+        </div>
 
 
 
 
 </body>
+
 </html>
