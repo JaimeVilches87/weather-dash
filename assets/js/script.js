@@ -1,216 +1,167 @@
-var APIKey = "2d21806c273ae4d5ad203a6f6347f868";
-let locations = [];
-
-
 $(document).ready(function () {
 
+    var APIKey = "2d21806c273ae4d5ad203a6f6347f868";
+    let locations = [];
 
-    $("#searchBtn").click(function () {  //event handler for the city search input
-        // var element = event.target; //set element to the div that was clicked
-        var searchCriteria = $("#zipCode").val();  //get the user input
-        var queryURL = "https://api.openweathermap.org/data/2.5/forecast?q=" + searchCriteria + ",us&appid=" + APIKey;
-        // var weatherContainer = $("#weatherContainer");
-        // var data = response.json()
-        // var lat = response.city.coord.lat;
+  //event handler for the city search input
+    $("#searchBtn").click(function () {
+
+        loadLocations();
+        //get the user input
+        var searchCriteria = $("#zipCode").val();
+        getWeather(searchCriteria);
+    });
 
 
+    function loadLocations() {
+        var locationsArray = localStorage.getItem("locations");
+        if (locationsArray) //if not undefined
+        {
+            locations = JSON.parse(locationsArray);  //make sure there is a locations object in local storage
+            renderLocations();
+        }
+        else {
+            localStorage.setItem("locations", JSON.stringify(locations));  //if not make one and store it to local storage
+        }
+    };
+
+    function renderLocations() {
+        var divLocations = $("#locationHistory");
+        divLocations.empty();  //clear the cities list before rendering it from the local storage object
+
+        $.each(locations, function (index) {
+            var a = $("<a>").addClass("list-group-item list-group-item-action city").attr("data-city", locations[index]).text(locations[index]);
+            divLocations.append(a);
+        });
+
+        $("#locationHistory > a").off();
+
+        $("#locationHistory > a").click(function (event) {
+            var element = event.target;
+            var city = $(element).attr("data-city");
+
+            getWeather(city);
+
+        });
+
+    };
+
+    //save locations to the locations array and local storage
+    function saveLocations(city) {
+
+        locations.unshift(city);
+        localStorage.setItem("locations", JSON.stringify(locations));
+
+    };
+
+      function getWeather(city) {
+
+        var queryURL = "https://api.openweathermap.org/data/2.5/forecast?q=" + city + ",us&appid=" + APIKey;
+
+
+        //First call to the OpenWeatherMap API to get lat and lon
         $.ajax({
             url: queryURL,
             method: "GET",
 
-            // We store all of the retrieved data inside of an object called "response"
+            // We store all of the retrieved data inside "response"
             success: function (response) {
-                // console.log(response);
-                // var res = response;
-                var lat = (response.city.coord.lat);
-                var lon = (response.city.coord.lon);
-                var city = (response.city.name);
+                var lat = response.city.coord.lat;
+                var lon = response.city.coord.lon;
+                var city = response.city.name;
+                localStorage.setItem("city", city);
 
-                console.log(lat);
-                console.log(lon);
-                localStorage.setItem("lati", lat);
-                localStorage.setItem("long", lon);
-                localStorage.setItem("city", city)
+                saveLocations(city);
+                renderLocations();
+                showWeather(lat, lon);
+            },
+
+        });
+    };
+
+    //Function to get one call API data
+    function showWeather(lat, lon) {
+
+        // console.log(lat, lon);
+        renderLocations(lat, lon);
+        var queryURL = "https://api.openweathermap.org/data/2.5/onecall?lat=" + lat + "&lon=" + lon + "&exclude=,minutely,hourly,alerts&units=imperial&appid=" + APIKey;
+        console.log(queryURL);
+
+        // Second call to the OpenWeatherMap API for one call 
+        $.ajax({
+            url: queryURL,
+            method: "GET",
+
+            // We store all of the retrieved data inside "response"
+            success: function (response) {
+                console.log(response);
+
+
+                var city = localStorage.city;
+                var temp = Math.round(response.current.temp);
+                var uvIndex = response.current.uvi;
+
+                //holds the colors for UV Index
+                var bgColor = "";
+                var textColor = "";
+                var iconURL = "http://openweathermap.org/img/w/" + response.current.weather[0].icon + ".png";  //get weather icon
+
+                //if uv index is low (1-2)
+                if (uvIndex < 3) {
+                    bgColor = "bg-success";
+                    textColor = "text-light";
+                }
+                //if uv index is mocerate (3-5)
+                else if (uvIndex > 2 && uvIndex < 6) {
+                    bgColor = "bg-warning";
+                    textColor = "text-dark";
+                }
+                //if uv index is high (6+)
+                else {
+                    bgColor = "bg-danger";
+                    textColor = "text-light";
+                }
+
+
+                //posts infor on screen
+                $("#cityDate").html(city + " (" + new Date().toLocaleDateString() + ") <img id=\"icon\" src=\"" + iconURL + "\" alt=\"Weather icon\"/>");
+                console.log(temp);
+                $("#currentTemp").html(" " + temp + "  &degF");
+                $("#currentHumidity").html(response.current.humidity + "%");
+                $("#currentWindSpeed").html(response.current.wind_speed + " MPH");
+                $("#currentUVIndex").html(uvIndex).addClass(bgColor + " p-1 " + textColor);
+
+                //we want the 5 day forecast
+                var ul5 = $("#fiveDay");
+                ul5.empty();
+
+                for (i = 1; i < 6; i++) {
+                    //make the data display the 5 day forecast and append to the parent div
+                    var div = $("<div>").addClass("bg-primary");
+
+                    var dateTime = (response.daily[i].dt);
+                    var dateHeading = $("<h6>").text(new Date(dateTime * 1000).toLocaleDateString());  //convert unix time to javascript date
+                    var iconDayURL = "http://openweathermap.org/img/w/" + response.daily[i].weather[0].icon + ".png";  //get weather icon
+                    var icon = $("<img>").attr("src", iconDayURL);
+                    temp = (response.daily[i].temp.day);
+                    temp = Math.round(temp);
+                    var temp5 = $("<p>").html("Temp: " + temp + "  &degF");
+                    var humidity5 = $("<p>").html("Humidity: " + response.daily[i].humidity + "%");
+
+                    //appends info on page
+                    div.append(dateHeading, icon, temp5, humidity5);
+                    ul5.append(div);
+
+                }
+
+
+
             },
 
 
         });
-        console.log(queryURL);
-        console.log(searchCriteria);
-        function getWeatherData() {
 
-            var lat = localStorage.lati;
-            var lon = localStorage.long;
-
-            console.log(lat, lon);
-
-            var queryURL = "https://api.openweathermap.org/data/2.5/onecall?lat=" + lat + "&lon=" + lon + "&exclude=,minutely,hourly,alerts&units=imperial&appid=" + APIKey;
-            console.log(queryURL);
-            // Here we run our AJAX call to the OpenWeatherMap API
-            $.ajax({
-                url: queryURL,
-                method: "GET",
-
-                // We store all of the retrieved data inside of an object called "response"
-                success: function (response) {
-                    console.log(response);
-
-                    showWeather(response);
-                },
-
-
-            });
-
-        };
-        getWeatherData();
-
-
-        function showWeather(response) {
-            var city = localStorage.city;
-            var temp = (response.current.temp);
-            var uvIndex = (response.current.uvi);
-            var bgColor = "";  //holds the background color for UV Index
-            var textColor = "";  //holds the text color for UV Index
-            var iconURL = "http://openweathermap.org/img/w/" + response.current.weather[0].icon + ".png";  //get weather icon
-
-            if (uvIndex < 3) //if uv index is low (1-2)
-            {
-                bgColor = "bg-success";
-                textColor = "text-light";
-            }
-            else if (uvIndex > 2 && uvIndex < 6)  //if uv index is mocerate (3-5)
-            {
-                bgColor = "bg-warning";
-                textColor = "text-dark";
-            }
-            else  //if uv index is high (6+)
-            {
-                bgColor = "bg-danger";
-                textColor = "text-light";
-            }
-
-            $("#cityDate").html(city + " (" + new Date().toLocaleDateString() + ") <img id=\"icon\" src=\"" + iconURL + "\" alt=\"Weather icon\"/>");
-            console.log(temp);
-            $("#currentTemp").html(" " + temp + "  &degF");
-            $("#currentHumidity").html(response.current.humidity + "%");
-            $("#currentWindSpeed").html(response.current.wind_speed + " MPH");
-            $("#currentUVIndex").html(uvIndex).addClass(bgColor + " p-1 " + textColor); //set the UVIndex and color to the html
-
-            var ul5 = $("#fiveDay");
-            ul5.empty();
-
-            for (i = 1; i < 6; i++)  //we want the days 1-5
-            {
-                //make the elements to display the 5 day forecast and append to the parent div
-                var div = $("<div>").addClass("bg-primary");
-
-                var dateTime = (response.daily[i].dt);
-                var dateHeading = $("<h6>").text(new Date(dateTime * 1000).toLocaleDateString());  //convert unix time to javascript date
-                var iconDayURL = "http://openweathermap.org/img/w/" + response.daily[i].weather[0].icon + ".png";  //get weather icon
-                var icon = $("<img>").attr("src", iconDayURL);
-
-                temp = (response.daily[i].temp.day);  //convert kelvin to Fahrenheit
-                // temp = Math.round(((temp - 273.15) * 1.8) + 32);  //convert kelvin to Fahrenheit
-                var temp5 = $("<p>").html("Temp: " + temp + "  &degF");
-
-                var humidity5 = $("<p>").html("Humidity: " + response.daily[i].humidity + "%");
-
-                div.append(dateHeading);
-                div.append(icon);
-                div.append(temp5);
-                div.append(humidity5);
-                ul5.append(div);
-
-            }
-
-        };
-
-    });
-
-
+    };
 
 
 });
-
-
-
-
-
-
-// function getWeatherData(lat, lon, city) {
-
-
-//     // Here we run our AJAX call to the OpenWeatherMap API
-//     $.ajax({
-//         url: queryURL,
-//         method: "GET",
-//         success: function (data) {
-
-//             console.log(data)
-
-//         }
-//     })
-
-//     // lat= 
-//     //     // We store all of the retrieved data inside of an object called "response"
-//     //     .then(function (response) {
-
-//     //          console.log(response);
-
-//     //         showWeatherData(response, city);
-
-//     //     });
-// };
-
-
-
-
-
-
-
-
-
-
-
-// // function weatherZip() {
-
-// // var queryUrl = "api.openweathermap.org/data/2.5/weather?zip={zip code},{country code}&appid={API key}";
-
-
-// }
-
-
-// function weatherCity() {
-// var queryURL = "https://api.openweathermap.org/data/2.5/forecast?q=" + city + ",us&appid=" + APIKey;
-
-// }
-
-
-// function loadWeatherZip(zipCode, isClicked) {
-
-//     var queryURL = "https://api.openweathermap.org/data/2.5/forecast?q=" + city + ",us&appid=" + APIKey;
-//     var weatherContainer = $("#weatherContainer");
-
-//     // Here we run our AJAX call to the OpenWeatherMap API
-//     $.ajax({
-//         url: queryURL,
-//         method: "GET"
-//     })
-//         // We store all of the retrieved data inside of an object called "response"
-//         .then(function (response) {
-
-//             console.log(response);
-
-//             if (!isClicked) {
-//                 saveLocations(response);  //save the city and zip to local storage
-//                 renderLocations();
-//             }
-
-
-//             //load weather
-//             getWeatherData(response.city.coord.lat, response.city.coord.lon, response.city.name);
-
-//         }).catch(function (response) {
-//             alert("Not a vaild Zip Code")
-//         });
-// }
