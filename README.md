@@ -9,7 +9,7 @@
 ## 1. Description
 
 
-### This is a Day planner created with Jquery, it uses CSS, bootstrap, and moment.js to capture time. It integrates a third party API with OpenWeather.
+### This is a Day planner created with Jquery, it uses CSS, bootstrap, and moment.js to capture time. It integrates a third party API with OpenWeather."add
 
 This application is to see the current weather and the 5 day forecast for the city that is searched
 
