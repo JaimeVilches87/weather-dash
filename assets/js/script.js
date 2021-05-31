@@ -3,7 +3,7 @@ $(document).ready(function () {
     var APIKey = "2d21806c273ae4d5ad203a6f6347f868";
     let locations = [];
 
-  //event handler for the city search input
+    //event handler for the city search input
     $("#searchBtn").click(function () {
 
         loadLocations();
@@ -12,49 +12,8 @@ $(document).ready(function () {
         getWeather(searchCriteria);
     });
 
-
-    function loadLocations() {
-        var locationsArray = localStorage.getItem("locations");
-        if (locationsArray) //if not undefined
-        {
-            locations = JSON.parse(locationsArray);  //make sure there is a locations object in local storage
-            renderLocations();
-        }
-        else {
-            localStorage.setItem("locations", JSON.stringify(locations));  //if not make one and store it to local storage
-        }
-    };
-
-    function renderLocations() {
-        var divLocations = $("#locationHistory");
-        divLocations.empty();  //clear the cities list before rendering it from the local storage object
-
-        $.each(locations, function (index) {
-            var a = $("<a>").addClass("list-group-item list-group-item-action city").attr("data-city", locations[index]).text(locations[index]);
-            divLocations.append(a);
-        });
-
-        $("#locationHistory > a").off();
-
-        $("#locationHistory > a").click(function (event) {
-            var element = event.target;
-            var city = $(element).attr("data-city");
-
-            getWeather(city);
-
-        });
-
-    };
-
-    //save locations to the locations array and local storage
-    function saveLocations(city) {
-
-        locations.unshift(city);
-        localStorage.setItem("locations", JSON.stringify(locations));
-
-    };
-
-      function getWeather(city) {
+    //function to call API to get weather data
+    function getWeather(city) {
 
         var queryURL = "https://api.openweathermap.org/data/2.5/forecast?q=" + city + ",us&appid=" + APIKey;
 
@@ -72,7 +31,7 @@ $(document).ready(function () {
                 localStorage.setItem("city", city);
 
                 saveLocations(city);
-                renderLocations();
+                renderLocations(city);
                 showWeather(lat, lon);
             },
 
@@ -125,7 +84,7 @@ $(document).ready(function () {
 
                 //posts infor on screen
                 $("#cityDate").html(city + " (" + new Date().toLocaleDateString() + ") <img id=\"icon\" src=\"" + iconURL + "\" alt=\"Weather icon\"/>");
-                console.log(temp);
+                // console.log(temp);
                 $("#currentTemp").html(" " + temp + "  &degF");
                 $("#currentHumidity").html(response.current.humidity + "%");
                 $("#currentWindSpeed").html(response.current.wind_speed + " MPH");
@@ -163,5 +122,46 @@ $(document).ready(function () {
 
     };
 
+    //function to load locations
+    function loadLocations() {
+        var locationsArray = localStorage.getItem("locations");
+        if (locationsArray) //if not undefined
+        {
+            locations = JSON.parse(locationsArray);  //make sure there is a locations object in local storage
+            renderLocations();
+        }
+        else {
+            localStorage.setItem("locations", JSON.stringify(locations));  //if not make one and store it to local storage
+        }
+    };
 
+    //function to render locations
+    function renderLocations() {
+        var divLocations = $("#locationHistory");
+        divLocations.empty();  //clear the cities list before rendering it from the local storage object
+
+        $.each(locations, function (index) {
+            var a = $("<a>").addClass("list-group-item list-group-item-action city").attr("data-city", locations[index]).text(locations[index]);
+            divLocations.append(a);
+        });
+
+        $("#locationHistory > a").off();
+
+        $("#locationHistory > a").click(function (event) {
+            var element = event.target;
+            var city = $(element).attr("data-city");
+
+            getWeather(city);
+
+        });
+
+    };
+
+    //save locations to the locations array and local storage
+    function saveLocations(city) {
+
+        locations.unshift(city);
+        localStorage.setItem("locations", JSON.stringify(locations));
+
+    };
 });
