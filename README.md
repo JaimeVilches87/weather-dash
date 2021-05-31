@@ -22,4 +22,4 @@ Desktop screen:
 
 ### Open your web browser and enter the following web address to access.
 
-https://jaimevilches87.github.io/work-day-planner/
+https://jaimevilches87.github.io/weather-dash/
